@@ -16,7 +16,7 @@ pub fn launch(request: &ConversionRequest) -> Result<Child, String> {
         Command::new(directory.join("engine/bankflow-worker.exe"))
     };
     command.env("PYTHONIOENCODING", "utf-8")
-        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;

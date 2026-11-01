@@ -48,7 +48,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <div class="output-row"><div><strong>保存到</strong><p id="output-label">原文件所在目录</p></div><button id="output" class="secondary">更改</button></div>
         </section>
       </div>
-      <section class="panel result" aria-labelledby="task-title" data-state="idle"><div class="task-icon">${icon('clock')}</div><div class="task-content"><div class="result-top"><h2 id="task-title">转换任务</h2><span id="status">等待添加文件</span></div><p id="detail" role="status">准备好文件后，就可以开始了。</p><progress id="progress" max="100" value="0" aria-label="转换进度"></progress><p id="result-path" class="path"></p></div></section>
+      <section class="panel result" aria-labelledby="task-title" data-state="idle"><div class="task-icon">${icon('clock')}</div><div class="task-content"><div class="result-top"><h2 id="task-title">转换任务</h2><div class="result-actions"><button id="result-file" class="secondary" hidden>打开文件</button><button id="result-folder" class="secondary" hidden>打开目录</button><button id="show-log" class="secondary">查看日志</button><span id="status">等待添加文件</span></div></div><p id="detail" role="status">准备好文件后，就可以开始了。</p><progress id="progress" max="100" value="0" aria-label="转换进度"></progress><p id="result-path" class="path"></p></div></section>
 
     </main>
       <footer><p id="environment">${icon('lock')} 文件不上传，处理更安心</p><div class="footer-actions"><button id="cancel" class="secondary" hidden>取消转换</button><button id="start" class="primary" disabled><span id="start-label">开始转换</span>${icon('arrow')}</button></div></footer>
@@ -70,7 +70,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <label id="image-password-label" hidden>PDF 密码（可选）<input id="image-password" type="password" autocomplete="off"></label>
   <p class="field-help">PDF 默认按 144 DPI 转图片。图片转 PDF 时透明区域使用白色背景；暂不支持动画和多帧图片。</p></fieldset>
   <p id="image-error" role="status"></p><div class="dialog-actions"><button id="image-run" class="primary">开始处理</button><button id="image-close" class="secondary">返回</button></div></dialog>
-  <dialog id="completion" aria-labelledby="completion-title"><h2 id="completion-title">转换完成</h2><p>结果已保存，你想如何查看？</p><p id="open-error" role="status"></p><div class="dialog-actions"><button id="open-file" class="primary">打开文件</button><button id="open-folder" class="secondary">打开目录</button><button id="close-completion" class="secondary">稍后查看</button></div></dialog>`;
+  <dialog id="completion" aria-labelledby="completion-title"><h2 id="completion-title">转换完成</h2><p>结果已保存，你想如何查看？</p><p id="open-error" role="status"></p><div class="dialog-actions"><button id="open-file" class="primary">打开文件</button><button id="open-folder" class="secondary">打开目录</button><button id="close-completion" class="secondary">稍后查看</button></div></dialog><dialog id="log-dialog" aria-labelledby="log-title"><div class="section-heading"><h2 id="log-title">转换日志</h2><button id="close-log" class="secondary">关闭</button></div><pre id="log-content" aria-live="polite">暂无日志</pre></dialog>`;
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const start = el<HTMLButtonElement>('start');
@@ -84,7 +84,15 @@ let outputDir: string | null = null;
 let busy = false;
 let ready = false;
 let resultPath = '';
-let taskSnapshot: TaskSnapshot = {running:false,owner:'',items:[]};
+let taskSnapshot: TaskSnapshot = {running:false,owner:'',items:[],logs:[]};
+const logDialog=el<HTMLDialogElement>('log-dialog');
+function renderLogs() { el('log-content').textContent=taskSnapshot.logs.length ? taskSnapshot.logs.join('\n') : '暂无日志'; }
+function resultActions() { for(const id of ['result-file','result-folder']) el(id).hidden=!resultPath; }
+el('show-log').onclick=()=>{renderLogs();logDialog.showModal();};
+el('close-log').onclick=()=>logDialog.close();
+for(const [id,folder] of [['result-file',false],['result-folder',true]] as const) {
+  el(id).onclick=async()=>{try {await invoke('open_result',{path:resultPath,folder});} catch(error) {showError(error);}};
+}
 const taskPanel=createTaskPanel();
 const desktopSettings=quickWindow?null:createDesktopSettings();
 el('system-settings').onclick=()=>{void desktopSettings?.open();};
@@ -195,12 +203,14 @@ async function initialize() {
   }
   try {
     await onConversion(event => {
+      if(event.kind==='log') { taskSnapshot.logs.push(event.message ?? ''); if(taskSnapshot.logs.length>1000) taskSnapshot.logs.shift(); if(logDialog.open) renderLogs(); return; }
       if(event.snapshot) {
         taskSnapshot=event.snapshot;taskPanel.update(taskSnapshot);setBusy(taskSnapshot.running);
+        if(logDialog.open) renderLogs();
         const items=taskSnapshot.items;
         if(event.kind==='started') {
           if(completion.open) completion.close();
-          resultPath='';el('result-path').textContent='';
+          resultPath='';resultActions();el('result-path').textContent='';
           if(items.length>1 && quickWindow && taskSnapshot.owner==='quick') void invoke('show_tasks').catch(showError);
         }
         const active=items.findIndex(item=>item.status==='running');
@@ -229,6 +239,7 @@ async function initialize() {
       if (event.kind === 'completed') {
         setStep(3);
         resultPath = event.output ?? '';
+        resultActions();
         el('open-error').textContent = '';
         if(taskSnapshot.owner === (quickWindow?'quick':'main')) completion.showModal();
         if(quickWindow && taskSnapshot.owner==='quick') void invoke('quick_present').catch(console.error);
@@ -241,6 +252,7 @@ async function initialize() {
     });
     await listen('show-tasks',()=>{if(!quickWindow) taskPanel.open();});
     taskSnapshot=await invoke<TaskSnapshot>('task_snapshot');taskPanel.update(taskSnapshot);setBusy(taskSnapshot.running);
+    if(taskSnapshot.items.length===1) {resultPath=taskSnapshot.items[0].output ?? '';resultActions();}
     ready = true;
     await listen<string>('shortcut-error', event=>{ if (!quickWindow) showError(event.payload); });
     await listen('drag-enabled',()=>{el('environment').textContent='Ctrl 拖动：银行流水 · Ctrl + Alt 拖动：通用转换';});

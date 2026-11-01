@@ -35,6 +35,7 @@ pub struct TaskSnapshot {
     pub running: bool,
     pub owner: String,
     pub items: Vec<TaskItem>,
+    pub logs: Vec<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -44,6 +45,7 @@ pub enum ConversionEvent {
     Item { snapshot: TaskSnapshot },
     Batchcompleted { snapshot: TaskSnapshot },
     Progress { page: u32, total: u32 },
+    Log { message: String },
     Completed { output: String },
     Cancelled { message: String },
     Error { message: String },

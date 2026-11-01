@@ -16,10 +16,10 @@ export interface ConversionRequest {
 }
 
 export interface TaskItem { input:string; status:'pending'|'running'|'completed'|'error'|'cancelled'|'skipped'; output:string|null; message:string|null }
-export interface TaskSnapshot { running:boolean; owner:string; items:TaskItem[] }
+export interface TaskSnapshot { running:boolean; owner:string; items:TaskItem[]; logs:string[] }
 
 export interface ConversionEvent {
-  kind: 'progress' | 'completed' | 'cancelled' | 'error' | 'started' | 'item' | 'batchcompleted';
+  kind: 'progress' | 'completed' | 'cancelled' | 'error' | 'started' | 'item' | 'batchcompleted' | 'log';
   snapshot?: TaskSnapshot;
   page?: number;
   total?: number;

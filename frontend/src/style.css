@@ -104,6 +104,12 @@ input:disabled, select:disabled { background: var(--canvas); color: var(--muted)
 .task-icon { width: 42px; height: 42px; border-radius: 12px; background: #f1f4f2; color: var(--muted); display: grid; place-items: center; flex-shrink: 0; }
 .task-content { flex: 1; min-width: 0; }
 .result-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.result-top { flex-wrap: wrap; }
+.result-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.result-actions button { padding: 5px 9px; min-height: 32px; font-size: 12px; }
+.result-actions button[hidden] { display: none; }
+#log-dialog { width: 720px; max-width: 92vw; }
+#log-content { max-height: 55vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; background: var(--accent-soft); color: var(--text); border-radius: 6px; font-size: 12px; line-height: 1.6; }
 .result h2 { font-size: 13px; }
 #status { font-size: 12px; color: var(--muted); background: #f1f4f2; border-radius: 5px; padding: 3px 8px; }
 #detail { font-size: 12px; color: var(--muted); margin: 5px 0 0; overflow-wrap: anywhere; }

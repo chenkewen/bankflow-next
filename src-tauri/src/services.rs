@@ -37,7 +37,7 @@ pub fn start(app: tauri::AppHandle, state: &ConversionState, request: Conversion
     let mut task=state.task.lock().map_err(|_|"任务状态不可用")?;
     if task.snapshot.running {return Err("已有任务正在处理，请先完成或取消".into());}
     task.cancelled=false;
-    task.snapshot=TaskSnapshot {running:true, owner, items:requests.iter().map(|request|TaskItem {input:request.input.clone(),status:"pending".into(),..Default::default()}).collect()};
+    task.snapshot=TaskSnapshot {running:true, owner, items:requests.iter().map(|request|TaskItem {input:request.input.clone(),status:"pending".into(),..Default::default()}).collect(), logs:Vec::new()};
     let initial=task.snapshot.clone();
     drop(task);
     crate::desktop::update_status(&app,&initial);
@@ -65,6 +65,24 @@ pub fn start(app: tauri::AppHandle, state: &ConversionState, request: Conversion
             last=match launch {
                 Err(message)=>ConversionEvent::Error {message},
                 Ok(mut child)=>{
+                    let log_shared=Arc::clone(&shared);
+                    let log_app=app.clone();
+                    let secret=request.password.clone();
+                    let label=if batch {format!("[{}] ",index+1)} else {String::new()};
+                    let stderr=child.stderr.take();
+                    let log_reader=std::thread::spawn(move || {
+                        if let Some(stderr)=stderr {
+                            for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+                                let line=if secret.is_empty() {line} else {line.replace(&secret,"[已隐藏]")};
+                                let line=format!("{}{}",label,line.chars().take(4000).collect::<String>());
+                                if let Ok(mut task)=log_shared.lock() {
+                                    if task.snapshot.logs.len()>=1000 {task.snapshot.logs.remove(0);}
+                                    task.snapshot.logs.push(line.clone());
+                                }
+                                let _=log_app.emit("conversion",ConversionEvent::Log {message:line});
+                            }
+                        }
+                    });
                     let mut terminal=None;
                     if let Some(stdout)=child.stdout.take() {
                         for line in BufReader::new(stdout).lines() {
@@ -76,6 +94,7 @@ pub fn start(app: tauri::AppHandle, state: &ConversionState, request: Conversion
                         }
                     }
                     let exit=child.wait();
+                    let _=log_reader.join();
                     if !matches!(exit,Ok(status) if status.success()) && !matches!(terminal,Some(ConversionEvent::Error {..})) {
                         terminal=Some(ConversionEvent::Error {message:"引擎异常退出，未确认转换成功".into()});
                     }
