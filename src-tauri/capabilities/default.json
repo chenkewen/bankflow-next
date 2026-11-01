@@ -1,0 +1,14 @@
+{
+  "identifier": "main-window",
+  "description": "主窗口仅允许事件通信和本地文件选择",
+  "windows": [
+    "main",
+    "quick"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "core:window:allow-hide",
+    "core:window:allow-show"
+  ]
+}

@@ -1,0 +1,60 @@
+/* 统一使用语义颜色，保留快捷窗口透明背景和原生品牌图标。 */
+[data-appearance] .topbar { background: var(--surface); color: var(--text); }
+[data-appearance] footer { background: var(--canvas); }
+[data-appearance] .file-picker, [data-appearance] .task-icon, [data-appearance] .format-card, [data-appearance] .pdf-operations label { background: var(--canvas); color: var(--text); }
+[data-appearance] .file-picker:hover:not(:disabled), [data-appearance] .mode-option:hover, [data-appearance] .mode-option:has(input:checked), [data-appearance] .format-card:has(input:checked), [data-appearance] .desktop-options label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
+[data-appearance] .desktop-options label { border-color: var(--border); }
+[data-appearance] .desktop-options small, [data-appearance] .close-dialog-button { color: var(--muted); }
+[data-appearance] .sidebar .nav-item.selected { background: var(--sidebar-selected); }
+[data-appearance] .nav-item.selected::before, [data-appearance] .sidebar .nav-dot { background: var(--sidebar-highlight); }
+[data-appearance] .sidebar .nav-label, [data-appearance] .brand div > span, [data-appearance] .sidebar .local-card p, [data-appearance] .version-tag { color: #c2cbd5; }
+[data-appearance] .sidebar .nav-item, [data-appearance] .sidebar .privacy-heading strong, [data-appearance] .sidebar .quit-app { color: #e6edf5; }
+[data-appearance] .privacy-heading .icon { color: var(--sidebar-highlight); }
+[data-appearance] h1 span, [data-appearance] .steps .current, [data-appearance] .mode-symbol, [data-appearance] .format-card:has(input:checked), [data-appearance] .file-assurance .icon { color: var(--accent-ink); }
+[data-appearance] .primary, [data-appearance] .choose-file { background: var(--accent); color: white; }
+[data-appearance] .primary:hover:not(:disabled), [data-appearance] .file-picker:hover .choose-file { background: var(--accent-hover); }
+[data-appearance] .primary:disabled { background: var(--border); color: var(--muted); border-color: var(--border); box-shadow: none; }
+[data-appearance] .file-support > span:not(:first-child), [data-appearance] #status, [data-appearance] .task-badge { background: var(--canvas); color: var(--muted); }
+[data-appearance] .task-badge.completed, [data-appearance] .task-badge.running, [data-appearance] .result[data-state="completed"] #status { background: var(--accent-soft); color: var(--accent-ink); }
+[data-appearance] .result[data-state="completed"] { border-color: var(--border); }
+[data-appearance] .task-badge.error { background: var(--error-soft); color: var(--error); }
+[data-appearance] .desktop-options input, [data-appearance] .remember-choice input { accent-color: var(--accent); }
+.settings-tabs { display: flex; gap: 8px; margin: 12px 0 20px; }
+.settings-tabs [aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.appearance-controls fieldset { border: 0; margin: 22px 0; padding: 0; min-width: 0; }
+.appearance-controls legend { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.appearance-modes { display: flex; gap: 10px; }
+.appearance-modes label { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.appearance-modes label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
+.appearance-modes input { margin: 0; padding: 0; width: 16px; height: 16px; accent-color: var(--accent); }
+.accent-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.accent-presets button { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); color: var(--text); background: var(--surface); padding: 8px 10px; font-size: 12px; }
+.accent-presets button > span { width: 15px; height: 15px; background: var(--swatch); border-radius: 50%; }
+.accent-presets [aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.custom-accent { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.custom-accent input { margin: 0; }
+#accent-picker { width: 48px; padding: 4px; cursor: pointer; }
+#accent-hex { width: 116px; font-family: monospace; }
+#accent-hex[aria-invalid="true"] { border-color: var(--error); }
+.appearance-footer { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border); padding-top: 18px; margin-top: 24px; }
+.appearance-footer [role="status"] { color: var(--muted); font-size: 12px; }
+
+/* 圆盘沿用主题变量，外部透明区域不绘制矩形卡片。 */
+.drag-ring { width: 336px; height: 374px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.drag-ring svg { width: 336px; height: 336px; filter: drop-shadow(0 8px 16px #102c2820); }
+.drag-ring path { fill: var(--surface); stroke: var(--border); stroke-width: 2; transition: fill 120ms; }
+.drag-ring path.active { fill: var(--accent-soft); stroke: var(--accent-ink); }
+.ring-option { position: absolute; transform: translate(-50%,-50%); width: 90px; padding: 4px; min-height: 44px; border: 0; background: transparent; color: var(--text); font-weight: 600; font-size: 13px; }
+.ring-center { position: absolute; left: 101px; top: 101px; width: 134px; height: 134px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--accent-ink); white-space: pre-line; }
+.ring-hint { margin: 0; padding: 6px; text-align: center; background: var(--surface); color: var(--muted); border-radius: 10px; font-size: 12px; }
+.ring-pending { width: 320px; height: 320px; margin: 8px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: grid; place-content: center; text-align: center; white-space: pre-line; line-height: 2; }
+
+.ring-setting-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.ring-setting-row label { flex: 1; display: flex; align-items: center; gap: 10px; margin: 0; }
+.ring-setting-row input { width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--accent); }
+.ring-setting-row button { min-height: 36px; padding: 6px 12px; }
+.ring-parameters { display: flex; gap: 16px; margin-top: 16px; }
+.ring-parameters > label { flex: 1; min-width: 0; }
+.ring-parameters fieldset { display: flex; gap: 18px; border: 0; padding: 0; }
+.ring-parameters fieldset label { display: flex; gap: 6px; align-items: center; }
+.ring-parameters input[type="radio"] { width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--accent); }
