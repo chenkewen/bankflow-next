@@ -39,6 +39,7 @@ bankflow-*/
 
 # 本地开发说明文档不提交
 /docs/*.md
+/TODO.md
 
 # 旧界面与本地开发配置不提交
 /legacy/
