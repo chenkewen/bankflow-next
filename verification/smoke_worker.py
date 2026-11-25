@@ -1,5 +1,5 @@
-"""使用合成 PDF 验证实际子进程协议，不包含真实流水数据。"""
-
+"""用合成流水测试桌面原生 worker 及其 JSON 行协议。"""
+import ctypes
 import json
 import os
 import subprocess
@@ -8,72 +8,101 @@ import tempfile
 import threading
 from pathlib import Path
 
+import pypdfium2 as pdf
+import pypdfium2.raw as raw
 from openpyxl import load_workbook
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.pdfgen.canvas import Canvas
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def create_statement(path, pages=1):
+    rows = [
+        ("Date", "Memo", "Credit", "Debit", "Balance"),
+        ("2026-01-01", "Transfer", "100.00", "", "1100.00"),
+        ("2026-01-02", "Payment", "", "20.00", "1080.00"),
+    ]
+    with pdf.PdfDocument.new() as doc:
+        for _ in range(pages):
+            page = doc.new_page(540, 320)
+            for i, values in enumerate(rows):
+                for j, value in enumerate(values):
+                    if not value:
+                        continue
+                    obj = raw.FPDFPageObj_NewTextObj(doc, b"Helvetica", 14)
+                    buf = ctypes.create_string_buffer((value + "\0").encode("utf-16-le"))
+                    assert raw.FPDFText_SetText(obj, ctypes.cast(buf, ctypes.POINTER(ctypes.c_ushort)))
+                    raw.FPDFPageObj_Transform(obj, 1, 0, 0, 1, 30 + 100*j, 245 - 45*i)
+                    raw.FPDFPage_InsertObject(page, obj)
+            segments = [(x, 145, x, 280) for x in range(20, 530, 100)]
+            segments += [(20, y, 520, y) for y in range(145, 281, 45)]
+            for x0, y0, x1, y1 in segments:
+                line = raw.FPDFPageObj_CreateNewPath(x0, y0)
+                assert raw.FPDFPath_LineTo(line, x1, y1)
+                assert raw.FPDFPath_SetDrawMode(line, 0, 1)
+                raw.FPDFPage_InsertObject(page, line)
+            assert raw.FPDFPage_GenerateContent(page)
+            page.close()
+        doc.save(path)
+
+
+def run_worker(request, *, cancel_on_progress=False):
+    exe = os.environ.get("BANKFLOW_TEST_WORKER") or ROOT / "src-tauri/target/debug/bankflow-workbench.exe"
+    payload = {"password": "", **request}
+    with tempfile.TemporaryFile("w+", encoding="utf-8") as errors, subprocess.Popen(
+        [exe, "--image-worker"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors,
+        text=True, encoding="utf-8",
+    ) as process:
+        timeout = threading.Timer(90, process.kill)
+        timeout.start()
+        try:
+            # worker 将标准输入断开视为取消，需保持管道直到结束事件。
+            process.stdin.write(json.dumps(payload) + "\n")
+            process.stdin.flush()
+            events = []
+            for line in process.stdout:
+                event = json.loads(line)
+                events.append(event)
+                if cancel_on_progress and event["kind"] == "progress":
+                    process.stdin.write('{"cancel":true}\n')
+                    process.stdin.flush()
+                    cancel_on_progress = False
+            status = process.wait()
+            errors.seek(0)
+            if status or not events:
+                raise AssertionError(f"worker 退出码 {status}；{errors.read()}")
+            return events
+        finally:
+            timeout.cancel()
+            if process.poll() is None:
+                process.kill()
 
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
-    root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory() as temp:
         source = Path(temp) / "合成流水.pdf"
-        pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
-        canvas = Canvas(str(source))
-        canvas.setFont("STSong-Light", 12)
-        canvas.drawString(50, 790, "银行交易流水")
-        rows = [
-            ["交易日期", "摘要", "收入", "支出", "余额"],
-            ["2026-01-01", "转入", "100.00", "", "1100.00"],
-            ["2026-01-02", "消费", "", "20.00", "1080.00"],
-        ]
-        for i, row in enumerate(rows):
-            for x, value in zip([50, 180, 290, 390, 490], row):
-                canvas.drawString(x, 740 - i * 30, value)
-        canvas.save()
+        create_statement(source)
         mode = "ocr" if "--ocr" in sys.argv else "pdf"
         if mode == "ocr":
-            import pypdfium2
-            document = pypdfium2.PdfDocument(str(source))
-            page = document[0]
-            bitmap = page.render(scale=2)
-            image = bitmap.to_pil()
-            source = Path(temp) / "合成扫描流水.png"
-            image.save(source)
-            image.close()
-            bitmap.close()
-            page.close()
-            document.close()
-        process = subprocess.Popen(
-            ([os.environ["BANKFLOW_TEST_WORKER"]] if os.environ.get("BANKFLOW_TEST_WORKER")
-             else [sys.executable, "-u", str(root / "scripts/run_worker.py")]),
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8")
-        deadline = threading.Timer(90, process.kill)
-        deadline.start()
+            with pdf.PdfDocument(source) as document:
+                page = document[0]
+                bitmap = page.render(scale=2)
+                with bitmap.to_pil() as image:
+                    source = Path(temp) / "合成扫描.png"
+                    image.save(source)
+                bitmap.close()
+                page.close()
+        events = run_worker({"input": str(source), "mode": mode})
+        assert events[-1]["kind"] == "completed", events
+        assert any(e["kind"] == "progress" for e in events), events
+        workbook = load_workbook(events[-1]["output"])
         try:
-            # 保持管道打开，避免把父进程断开误作正常提交完成。
-            process.stdin.write(json.dumps({"input": str(source), "mode": mode}) + "\n")
-            process.stdin.flush()
-            events = [json.loads(line) for line in process.stdout]
-            status = process.wait(timeout=30)
-            errors = process.stderr.read()
-            assert status == 0, errors + str(events)
-            assert events[-1]["kind"] == "completed", events
-            assert any(event["kind"] == "progress" for event in events), events
-            workbook = load_workbook(events[-1]["output"])
-            cells = [str(cell.value) for row in workbook.active for cell in row if cell.value is not None]
+            cells = [str(value) for row in workbook.active.values for value in row]
             assert "2026-01-01" in cells and "2026-01-02" in cells, cells
-            workbook.close()
-            print(f"{mode} 子进程转换通过：进度事件、完成事件、Excel 日期数据均已验证。")
         finally:
-            deadline.cancel()
-            if process.poll() is None:
-                process.kill()
-                process.wait()
-            for stream in (process.stdin, process.stdout, process.stderr):
-                stream.close()
+            workbook.close()
+        print(f"{mode} 子进程进度、完成事件和导出日期均通过验证。")
 
 
 if __name__ == "__main__":

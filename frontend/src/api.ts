@@ -15,11 +15,11 @@ export interface ConversionRequest {
   separate?: boolean;
 }
 
-export interface TaskItem { input:string; status:'pending'|'running'|'completed'|'error'|'cancelled'|'skipped'; output:string|null; message:string|null }
-export interface TaskSnapshot { running:boolean; owner:string; items:TaskItem[]; logs:string[] }
+export interface TaskItem { input:string; status:'pending'|'running'|'completed'|'error'|'cancelled'|'skipped'; output:string|null; message:string|null; elapsed_ms:number|null }
+export interface TaskSnapshot { running:boolean; owner:string; items:TaskItem[]; logs:string[]; elapsed_ms:number|null }
 
 export interface ConversionEvent {
-  kind: 'progress' | 'completed' | 'cancelled' | 'error' | 'started' | 'item' | 'batchcompleted' | 'log';
+  kind: 'progress' | 'completed' | 'cancelled' | 'error' | 'started' | 'item' | 'batchcompleted' | 'log' | 'cleared';
   snapshot?: TaskSnapshot;
   page?: number;
   total?: number;

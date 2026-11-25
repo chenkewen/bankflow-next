@@ -1,11 +1,31 @@
 import type { ConversionRequest } from './api';
+export const ocrImageExtensions = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff'];
+export const imageInputExtensions = [
+  ...ocrImageExtensions, 'gif', 'avif', 'psd', 'psb',
+  'sgi', 'rgb', 'rgba', 'bw', 'pcx', 'dib', 'qoi', 'jp2', 'j2k', 'jpc', 'xbm', 'xpm', 'ras', 'sun',
+  'pnm', 'pbm', 'pgm', 'ppm', 'pam', 'ff', 'ico', 'dds', 'tga', 'im',
+  'msp', 'gbr', 'pxr', 'dcx', 'fit', 'fits', 'spider', 'pcd', 'imt', 'icns', 'cur', 'wmf', 'emf',
+  'blp', 'ftu', 'ftc', 'fli', 'flc',
+];
+export const imageOutputFormats = [
+  { format: 'png', description: '保留透明' },
+  { format: 'jpg', description: '白色背景' },
+  { format: 'webp', description: '体积与画质' },
+  { format: 'bmp', description: '白色背景' },
+  { format: 'tiff', description: '无损存储' },
+];
 export type RingProfile = 'bank' | 'general';
 export interface QuickOption { quality?: number; width?: number; angle?: number; label: string; mode: ConversionRequest['mode']; format?: string; separate?: boolean }
 export function quickOptions(paths: string[]): QuickOption[] {
   if (!paths.length) return [];
   const extensions = paths.map(path => path.split('.').pop()!.toLowerCase());
-  if (extensions.every(ext => ['png','jpg','jpeg','webp','bmp','tif','tiff'].includes(ext))) {
-    return [...['png','jpg','webp','bmp','tiff'].map(format => ({label:format.toUpperCase(),mode:'image_convert' as const,format})),{label:'PDF',mode:'images_pdf'}];
+  if (extensions.every(ext => imageInputExtensions.includes(ext))) {
+    const options: QuickOption[] = imageOutputFormats.map(({format}) => ({label:format.toUpperCase(),mode:'image_convert',format}));
+    options.push({label:'PDF',mode:'images_pdf'});
+    if (extensions.every(ext => ocrImageExtensions.includes(ext))) {
+      options.unshift({label:paths.length > 1 ? '分别 OCR' : 'OCR 表格',mode:'ocr',separate:paths.length > 1});
+    }
+    return options;
   }
   if (extensions.every(ext => ext === 'pdf')) {
     if (paths.length > 1) return [

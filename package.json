@@ -1,6 +1,6 @@
 {
   "name": "bankflow-workbench",
-  "version": "0.1.5",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,14 @@
     "build": "tsc --noEmit && vite build",
     "desktop": "tauri dev",
     "desktop:build": "npm run engine:build && tauri build",
-    "engine:build": ".venv\\Scripts\\python.exe scripts/build_worker.py"
+    "desktop:portable": "npm run engine:build && tauri build --no-bundle && node scripts/stage-portable.mjs",
+    "engine:build": ".venv\\Scripts\\python.exe scripts/prepare_runtime.py",
+    "test": "npm run test:rust && npm run test:conversion && npm run test:ui",
+    "test:rust": "cargo test --locked --manifest-path src-tauri/Cargo.toml",
+    "test:conversion": "cargo build --locked --manifest-path src-tauri/Cargo.toml && .venv\\Scripts\\python.exe scripts/prepare_avif.py && .venv\\Scripts\\python.exe -m unittest discover -s verification -p \"*.py\"",
+    "test:ui": "tsc --noEmit && node verification/drag_ring_smoke.cjs && node verification/dual_ring_smoke.cjs && node verification/workbench_smoke.cjs",
+    "test:desktop": ".venv\\Scripts\\python.exe verification/run_desktop_smoke.py",
+    "test:portable": ".venv\\Scripts\\python.exe verification/run_desktop_smoke.py --release build/portable/bankflow-workbench.exe"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -16,6 +23,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
+    "esbuild": "0.25.12",
+    "playwright": "1.65.1",
     "typescript": "^5.7.0",
     "vite": "^6.0.0"
   }

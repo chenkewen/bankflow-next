@@ -1,6 +1,4 @@
-pdfplumber>=0.10.0
-openpyxl>=3.1.0
-pypdfium2>=4.0.0
-rapidocr_onnxruntime>=1.3.0
-Pillow>=10.0.0
-numpy>=1.24.0
+# Windows x64 原生 DLL 和 OCR 模型的开发期来源。
+pypdfium2==5.14.0
+onnxruntime==1.31.1
+rapidocr_onnxruntime==1.4.4

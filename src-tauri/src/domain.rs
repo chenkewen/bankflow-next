@@ -5,6 +5,7 @@ pub struct ConversionRequest {
     pub input: String,
     pub output_dir: Option<String>,
     pub mode: String,
+    #[serde(default)]
     pub password: String,
     #[serde(default)]
     pub inputs: Vec<String>,
@@ -22,12 +23,20 @@ pub struct ConversionRequest {
     pub separate: bool,
 }
 
+pub(crate) fn statement_input(path: &std::path::Path, mode: &str) -> bool {
+    let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_ascii_lowercase();
+    extension == "pdf" || (mode == "ocr" && matches!(
+        extension.as_str(), "png" | "jpg" | "jpeg" | "bmp" | "tif" | "tiff" | "webp"
+    ))
+}
+
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct TaskItem {
     pub input: String,
     pub status: String,
     pub output: Option<String>,
     pub message: Option<String>,
+    pub elapsed_ms: Option<u64>,
 }
 
 #[derive(Clone, Default, Deserialize, Serialize)]
@@ -36,11 +45,13 @@ pub struct TaskSnapshot {
     pub owner: String,
     pub items: Vec<TaskItem>,
     pub logs: Vec<String>,
+    pub elapsed_ms: Option<u64>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum ConversionEvent {
+    Cleared { snapshot: TaskSnapshot },
     Started { snapshot: TaskSnapshot },
     Item { snapshot: TaskSnapshot },
     Batchcompleted { snapshot: TaskSnapshot },

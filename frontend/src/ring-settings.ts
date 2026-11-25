@@ -1,4 +1,4 @@
-import type { QuickOption } from './quick-options';
+import { imageInputExtensions, imageOutputFormats, type QuickOption } from './quick-options';
 
 type Kind = 'pdf' | 'image';
 interface Entry extends QuickOption { id: string }
@@ -13,7 +13,7 @@ const catalog: Record<Kind, Entry[]> = {
     { id: 'merge', label: '合并 PDF', mode: 'pdf_merge' },
   ],
   image: [
-    ...['png', 'jpg', 'webp', 'bmp', 'tiff'].map(format => ({ id: format, label: format.toUpperCase(), mode: 'image_convert' as const, format })),
+    ...imageOutputFormats.map(({format}) => ({ id: format, label: format.toUpperCase(), mode: 'image_convert' as const, format })),
     { id: 'pdf', label: '合并为 PDF', mode: 'images_pdf' },
   ],
 };
@@ -38,7 +38,7 @@ export function generalOptions(paths: string[]): QuickOption[] {
   if (!paths.length) return [];
   const extensions = paths.map(path => path.split('.').pop()!.toLowerCase());
   const kind: Kind | null = extensions.every(ext => ext === 'pdf') ? 'pdf'
-    : extensions.every(ext => ['png','jpg','jpeg','webp','bmp','tif','tiff'].includes(ext)) ? 'image' : null;
+    : extensions.every(ext => imageInputExtensions.includes(ext)) ? 'image' : null;
   if (!kind) return [];
   const prefs = read(kind);
   return prefs.order.map(id => catalog[kind].find(item => item.id === id)!)

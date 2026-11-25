@@ -252,10 +252,6 @@ dialog::backdrop { background: #102c2866; }
 @media(max-width:900px) { .offline-badge { display: none; } #quick-pick { margin-right: 0; } }
 
 .quick-window #app { display: none; }
-.quick-surface { height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; gap: 16px; background: var(--canvas); border: 2px dashed #81b39e; }
-.quick-surface h1 { font-size: 22px; }
-.quick-surface p { margin: 0; color: var(--muted); }
-.quick-surface button { width: 100%; }
 .quick-window dialog:not(.drag-ring) { max-width: 94vw; padding: 20px; }
 
 .quick-root, .quick-window { background: transparent !important; }

@@ -7,7 +7,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# PyInstaller 构建产物
+# 本地构建产物
 build/
 dist/
 *.spec.bak

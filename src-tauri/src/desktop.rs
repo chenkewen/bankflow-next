@@ -64,13 +64,23 @@ pub fn show_main(app: &tauri::AppHandle) {
     }
 }
 
-pub fn update_status(app: &tauri::AppHandle, snapshot: &crate::domain::TaskSnapshot) {
-    if let Some(tray)=app.tray_by_id("bankflow") {
-        let completed=snapshot.items.iter().filter(|item|item.status=="completed").count();
-        let failed=snapshot.items.iter().filter(|item|item.status=="error").count();
-        let phase=if snapshot.running {"处理中"} else {"任务结束"};
-        let _=tray.set_tooltip(Some(format!("BankFlow Next · {phase} · 成功 {completed}/{} · 失败 {failed}",snapshot.items.len())));
-    }
+const IDLE_TOOLTIP: &str = "BankFlow Next · 本地文件工作台";
+
+pub fn update_status(app: &tauri::AppHandle) {
+    let handle = app.clone();
+    // 刷新时读取最新状态，避免上一任务较迟抵达的提示覆盖清除或重新开始后的托盘状态。
+    let _ = app.run_on_main_thread(move || {
+        let Some(tray) = handle.tray_by_id("bankflow") else { return };
+        let Ok(snapshot) = crate::services::snapshot(&handle.state::<crate::services::ConversionState>()) else { return };
+        if snapshot.items.is_empty() {
+            let _ = tray.set_tooltip(Some(IDLE_TOOLTIP));
+            return;
+        }
+        let completed = snapshot.items.iter().filter(|item| item.status == "completed").count();
+        let failed = snapshot.items.iter().filter(|item| item.status == "error").count();
+        let phase = if snapshot.running { "处理中" } else { "任务结束" };
+        let _ = tray.set_tooltip(Some(format!("BankFlow Next · {phase} · 成功 {completed}/{} · 失败 {failed}", snapshot.items.len())));
+    });
 }
 
 #[tauri::command]
@@ -104,7 +114,7 @@ pub fn install(app: &tauri::AppHandle)->Result<(),Box<dyn std::error::Error>> {
     let exit=MenuItem::with_id(app,"exit","退出 BankFlow Next",true,None::<&str>)?;
     let menu=Menu::with_items(app,&[&open,&tasks,&settings,&exit])?;
     let icon=app.default_window_icon().ok_or("缺少托盘图标")?.clone();
-    TrayIconBuilder::with_id("bankflow").icon(icon).tooltip("BankFlow Next · 本地文件工作台")
+    TrayIconBuilder::with_id("bankflow").icon(icon).tooltip(IDLE_TOOLTIP)
         .menu(&menu).show_menu_on_left_click(false)
         .on_tray_icon_event(|tray,event| {
             if matches!(event,TrayIconEvent::Click {button:MouseButton::Left,button_state:MouseButtonState::Up,..}) {show_main(tray.app_handle());}

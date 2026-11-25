@@ -1,13 +1,33 @@
 [package]
 name = "bankflow-workbench"
-version = "0.1.5"
+version = "1.0.1"
 edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+regex = "1"
+lexopt = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp", "webp", "tiff", "gif", "ico", "pnm", "tga", "dds", "ff", "qoi"] }
+webp = { version = "0.3", default-features = false }
+zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }
+tempfile = "3"
+tiff = "0.11"
+rust_xlsxwriter = "0.104.0"
+pdfium-render = { version = "=0.9.6", default-features = false, features = ["pdfium_7881", "image_025"] }
+ort = { version = "=2.0.0-rc.10", default-features = false, features = ["std", "load-dynamic"] }
+sha2 = "0.10"
+flate2 = "1"
+moxcms = "0.8"
+
+pcx = "0.2.5"
+openjp2 = { version = "0.7.2", default-features = false, features = ["image"] }
+windows = { version = "0.62.2", features = ["Win32_Graphics_Gdi", "Win32_Graphics_Imaging", "Win32_System_DataExchange", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_System_Console"] }
+geo-clipper = "0.9"
+geo-types = "0.7"

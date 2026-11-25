@@ -9,6 +9,11 @@ pub fn start_conversion(app: tauri::AppHandle, window: tauri::WebviewWindow, sta
 pub fn task_snapshot(state: tauri::State<'_, ConversionState>) -> Result<crate::domain::TaskSnapshot,String> {services::snapshot(&state)}
 
 #[tauri::command]
+pub fn clear_task(app: tauri::AppHandle, state: tauri::State<'_, ConversionState>) -> Result<(), String> {
+    services::clear(&app, &state)
+}
+
+#[tauri::command]
 pub fn cancel_conversion(state: tauri::State<'_, ConversionState>) -> Result<(), String> {
     services::cancel(&state)
 }

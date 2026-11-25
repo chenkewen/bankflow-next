@@ -43,7 +43,7 @@ const assert = require('node:assert/strict');
       ring.prepareDrag();ring.handle({type:'enter',paths:files,position:{x:180,y:180}});ring.handle({type:'leave'});ring.handle({...drop,position:position()});
       return {before,once,cancelled,centerClosed,unsupportedClosed,final:calls.length};
     });
-    assert.deepEqual(result,{before:6,once:1,cancelled:1,centerClosed:true,unsupportedClosed:true,final:1});
+    assert.deepEqual(result,{before:7,once:1,cancelled:1,centerClosed:true,unsupportedClosed:true,final:1});
     await page.evaluate(()=>ring.prepareDrag());
     assert.equal(await page.locator('.drag-ring').evaluate(dialog=>{
       dialog.focus();return getComputedStyle(dialog).outlineStyle;
@@ -51,7 +51,7 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.drag-ring').evaluate(dialog=>dialog.open),false);
     await page.close();
-    console.log(`缩放 ${deviceScaleFactor}x 通过：6 个格式、重复 Drop 只提交一次、Esc/取消/菜单空白区/不支持类型/移出不提交。`);
+    console.log(`缩放 ${deviceScaleFactor}x 通过：7 个图片操作、重复 Drop 只提交一次、Esc/取消/菜单空白区/不支持类型/移出不提交。`);
     }
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
